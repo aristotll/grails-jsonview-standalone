@@ -1,0 +1,6 @@
+def gdslScriptContext = context(scope: scriptScope(), filetypes: ["gson"])
+
+contributor([gdslScriptContext]) {
+    // the delegate type
+    delegatesTo(findClass("grails.plugin.json.view.api.JsonView"))
+}

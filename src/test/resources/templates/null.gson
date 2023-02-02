@@ -1,0 +1,7 @@
+import grails.plugin.json.view.*
+
+model {
+    functional.tests.Player player
+}
+
+json g.render(player, [renderNulls: true])
