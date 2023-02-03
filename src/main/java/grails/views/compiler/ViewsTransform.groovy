@@ -1,9 +1,7 @@
 package grails.views.compiler
 
-import grails.compiler.traits.TraitInjector
 import grails.views.Views
 import groovy.transform.CompilationUnitAware
-import groovy.transform.CompileDynamic
 import groovy.transform.CompileStatic
 import org.codehaus.groovy.ast.*
 import org.codehaus.groovy.ast.expr.*
@@ -16,8 +14,6 @@ import org.codehaus.groovy.control.SourceUnit
 import org.codehaus.groovy.transform.ASTTransformation
 import org.codehaus.groovy.transform.GroovyASTTransformation
 import org.codehaus.groovy.transform.trait.TraitComposer
-import org.grails.compiler.injection.GrailsASTUtils
-import org.grails.core.io.support.GrailsFactoriesLoader
 
 import java.lang.reflect.Modifier
 
@@ -31,6 +27,7 @@ import java.lang.reflect.Modifier
 @CompileStatic
 class ViewsTransform implements ASTTransformation, CompilationUnitAware {
     public static final String APPLIED = "grails.views.transform.APPLIED"
+    public static final Parameter[] ZERO_PARAMETERS = new Parameter[0];
 
     final String extension
     String dynamicPrefix
@@ -43,8 +40,6 @@ class ViewsTransform implements ASTTransformation, CompilationUnitAware {
 
     @Override
     void visit(ASTNode[] nodes, SourceUnit source) {
-        def traitInjectors = findTraitInjectors()
-
         def classes = source.AST.classes
 
 
@@ -61,15 +56,12 @@ class ViewsTransform implements ASTTransformation, CompilationUnitAware {
                         System.err.println("WARN: GSON view ${sourceName} defines package, and should not. Please remove the package statement.")
                         classNode.setName(classNode.nameWithoutPackage)
                     }
-                    for(injector in traitInjectors) {
-                        classNode.addInterface(ClassHelper.make(injector.trait))
-                    }
                     TraitComposer.doExtendTraits(classNode, source, compilationUnit)
 
 
                     def modelTypesVisitor = new ModelTypesVisitor(source)
                     modelTypesVisitor.visitClass(classNode)
-                    def runMethod = classNode.getMethod("run", GrailsASTUtils.ZERO_PARAMETERS)
+                    def runMethod = classNode.getMethod("run", ZERO_PARAMETERS)
                     def stm = runMethod.code
                     if(stm instanceof BlockStatement) {
                         BlockStatement bs = (BlockStatement)stm
@@ -110,13 +102,6 @@ class ViewsTransform implements ASTTransformation, CompilationUnitAware {
                     classNode.putNodeMetaData(APPLIED, Boolean.TRUE)
                 }
             }
-        }
-    }
-
-    @CompileDynamic
-    protected List<TraitInjector> findTraitInjectors() {
-        GrailsFactoriesLoader.loadFactories(TraitInjector).findAll() { TraitInjector ti ->
-            ti.artefactTypes.contains(Views.TYPE)
         }
     }
 

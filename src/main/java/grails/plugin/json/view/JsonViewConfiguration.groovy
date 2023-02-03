@@ -13,7 +13,6 @@ import java.beans.PropertyDescriptor
  * @author Graeme Rocher
  * @since 1.0
  */
-@ConfigurationProperties('grails.views.json')
 class JsonViewConfiguration implements GenericViewConfiguration {
 
     public static final String MODULE_NAME = "json"
