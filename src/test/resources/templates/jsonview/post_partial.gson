@@ -1,0 +1,19 @@
+import com.github.aristotll.jsonview.JsonViewerTemplateTest
+
+//     json.extract! post, :id, :body
+//    json.author do
+//      first_name, last_name = post.author_name.split(nil, 2)
+//      json.first_name first_name
+//      json.last_name last_name
+//    end
+// reimpl jbuilder in gson
+
+model {
+    JsonViewerTemplateTest.Post post
+}
+json g.render(post, [includes: ['id', 'body']])
+json.author {
+    def (first_name, last_name) = post.author_name.split(" ")
+    json.first_name first_name
+    json.last_name last_name
+}

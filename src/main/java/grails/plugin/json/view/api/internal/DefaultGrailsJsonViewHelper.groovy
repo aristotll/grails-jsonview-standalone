@@ -1,6 +1,8 @@
 package grails.plugin.json.view.api.internal
 
 import com.github.aristotll.jsonview.JsonViewTemplateConfig
+import grails.views.JsonGroovyTemplateEngineImpl
+import grails.views.ResolvableGroovyTemplateEngine
 import org.grails.datastore.mapping.model.MappingFactory
 import grails.plugin.json.view.api.GrailsJsonViewHelper
 import grails.plugin.json.view.api.JsonView
@@ -35,6 +37,7 @@ import static grails.views.utils.JsonOutputPublic.*
 class DefaultGrailsJsonViewHelper extends DefaultJsonViewHelper implements GrailsJsonViewHelper {
 
     public static final SpringTemplateEngine JSON_VIEW_TEMPLATE_ENGINE = new JsonViewTemplateConfig().jsonViewTemplateEngine()
+    public static final ResolvableGroovyTemplateEngine GROOVY_TEMPLATE_ENGINE = new JsonGroovyTemplateEngineImpl()
 
     DefaultGrailsJsonViewHelper(JsonView view) {
         super(view)
@@ -43,7 +46,7 @@ class DefaultGrailsJsonViewHelper extends DefaultJsonViewHelper implements Grail
 
     SpringTemplateEngine jsonViewTemplateEngine = JSON_VIEW_TEMPLATE_ENGINE
 
-    TemplateEngine templateEngine
+    TemplateEngine templateEngine = GROOVY_TEMPLATE_ENGINE
 
     public static final String NULL_VALUE = "null"
     protected final Writable NULL_OUTPUT = new Writable() {

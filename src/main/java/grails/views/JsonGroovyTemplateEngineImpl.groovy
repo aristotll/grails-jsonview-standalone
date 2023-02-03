@@ -2,10 +2,7 @@ package grails.views
 
 import grails.plugin.json.view.JsonViewWritableScript
 import grails.views.compiler.ViewsTransform
-import groovy.text.TemplateEngine
 import groovy.transform.CompileStatic
-
-
 /**
  * @author cheng.yao
  * @date 2023/2/2

@@ -21,9 +21,7 @@ import org.thymeleaf.spring5.SpringTemplateEngine
 @CompileStatic
 trait JsonViewTest {
     SpringTemplateEngine jsonViewTemplateEngine = DefaultGrailsJsonViewHelper.JSON_VIEW_TEMPLATE_ENGINE
-
-    @Lazy
-    ResolvableGroovyTemplateEngine templateEngine = new JsonGroovyTemplateEngineImpl()
+    ResolvableGroovyTemplateEngine templateEngine = DefaultGrailsJsonViewHelper.GROOVY_TEMPLATE_ENGINE
 
     /**
      * Render a template for the given source

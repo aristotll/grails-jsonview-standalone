@@ -1,0 +1,2 @@
+//    result = render('json.partial! "post", collection: @posts, as: :post', posts: POSTS)
+json g.render(template: "jsonview/post_partial", collection: posts, var: "post")

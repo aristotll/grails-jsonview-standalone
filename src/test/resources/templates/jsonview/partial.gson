@@ -1,0 +1,6 @@
+model {
+    String content
+}
+json {
+    content content
+}

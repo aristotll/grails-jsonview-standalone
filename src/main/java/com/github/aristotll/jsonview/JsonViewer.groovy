@@ -8,6 +8,7 @@ import groovy.text.Template
 import groovy.transform.CompileStatic
 import org.thymeleaf.context.Context
 import org.thymeleaf.spring5.SpringTemplateEngine
+
 /**
  * @author cheng.yao
  * @date 2023/2/3
@@ -16,7 +17,7 @@ import org.thymeleaf.spring5.SpringTemplateEngine
 class JsonViewer {
     SpringTemplateEngine jsonViewTemplateEngine = DefaultGrailsJsonViewHelper.JSON_VIEW_TEMPLATE_ENGINE
 
-    ResolvableGroovyTemplateEngine templateEngine = new JsonGroovyTemplateEngineImpl()
+    ResolvableGroovyTemplateEngine templateEngine = DefaultGrailsJsonViewHelper.GROOVY_TEMPLATE_ENGINE
 
     /**
      * Render a template for the given source
