@@ -2,12 +2,15 @@ package grails.views
 
 import com.github.benmanes.caffeine.cache.Cache
 import com.github.benmanes.caffeine.cache.Caffeine
+import grails.views.compiler.ViewsTransform
 import groovy.text.Template
 import groovy.text.TemplateEngine
 import groovy.transform.CompileStatic
 import groovy.util.logging.Slf4j
 import org.codehaus.groovy.control.CompilationFailedException
 import org.codehaus.groovy.control.CompilerConfiguration
+import org.codehaus.groovy.control.customizers.ASTTransformationCustomizer
+import org.codehaus.groovy.control.customizers.ImportCustomizer
 
 /**
  * A TemplateEngine that can resolve templates using the configured TemplateResolver
@@ -78,10 +81,12 @@ abstract class ResolvableGroovyTemplateEngine extends TemplateEngine {
 
     @Override
     WritableScriptTemplate createTemplate(Reader reader) throws CompilationFailedException, ClassNotFoundException, IOException {
+        def cc = new CompilerConfiguration(compilerConfiguration)
+        prepareCustomizers(cc)
         // if we reach here, use a throw away child class loader for dynamic templates
         def fileName = getDynamicTemplatePrefix() + templateCounter++
         try {
-            def clazz = classLoader.parseClass(new GroovyCodeSource(reader, fileName, GroovyShell.DEFAULT_CODE_BASE))
+            def clazz = new GroovyClassLoader(classLoader, cc).parseClass(new GroovyCodeSource(reader, fileName, GroovyShell.DEFAULT_CODE_BASE))
             return createTemplate(clazz)
         } catch (CompilationFailedException e) {
             throw new IllegalStateException(fileName, e)
@@ -100,4 +105,18 @@ abstract class ResolvableGroovyTemplateEngine extends TemplateEngine {
     }
 
     abstract String getDynamicTemplatePrefix()
+
+    protected void prepareCustomizers(CompilerConfiguration compilerConfiguration) {
+        // this hack is required because of https://issues.apache.org/jira/browse/GROOVY-7560
+        compilerConfiguration.compilationCustomizers.clear()
+
+
+        def importCustomizer = new ImportCustomizer()
+        compilerConfiguration.addCompilationCustomizers(
+                importCustomizer,
+                new ASTTransformationCustomizer(newViewsTransform())
+        )
+    }
+
+    abstract protected ViewsTransform newViewsTransform();
 }

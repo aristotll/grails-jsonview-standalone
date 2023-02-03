@@ -53,11 +53,6 @@ interface ViewConfiguration {
     boolean isCache()
 
     /**
-     * @return Path to the templates
-     */
-    String getTemplatePath()
-
-    /**
      * @return The packages to automatically import
      */
     String[] getPackageImports()

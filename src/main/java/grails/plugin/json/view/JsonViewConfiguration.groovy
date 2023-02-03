@@ -1,9 +1,7 @@
 package grails.plugin.json.view
 
 import grails.views.GenericViewConfiguration
-import grails.web.mime.MimeType
 import org.springframework.beans.BeanUtils
-import org.springframework.boot.context.properties.ConfigurationProperties
 
 import java.beans.PropertyDescriptor
 
@@ -17,9 +15,8 @@ class JsonViewConfiguration implements GenericViewConfiguration {
 
     public static final String MODULE_NAME = "json"
 
-    List<String> mimeTypes = [MimeType.JSON.name, MimeType.HAL_JSON.name]
+    List<String> mimeTypes = ["JSON"]
 
-    JsonViewGeneratorConfiguration generator = new JsonViewGeneratorConfiguration()
 
     JsonViewConfiguration() {
         setExtension(JsonViewWritableScript.EXTENSION)

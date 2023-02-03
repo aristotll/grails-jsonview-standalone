@@ -1,20 +1,7 @@
 package grails.views
 
-import grails.config.ConfigMap
-import grails.core.GrailsApplication
-import grails.core.GrailsClass
-import grails.core.support.GrailsApplicationAware
-import grails.util.BuildSettings
-import grails.util.Environment
-import grails.util.Metadata
+
 import groovy.transform.CompileStatic
-import org.grails.config.CodeGenConfig
-import org.grails.core.artefact.DomainClassArtefactHandler
-import org.grails.io.support.GrailsResourceUtils
-import org.springframework.beans.BeanUtils
-
-import java.beans.PropertyDescriptor
-
 /**
  * Default configuration
  *
@@ -22,7 +9,7 @@ import java.beans.PropertyDescriptor
  * @since 1.0
  */
 @CompileStatic
-trait GenericViewConfiguration implements ViewConfiguration{
+trait GenericViewConfiguration implements ViewConfiguration {
 
     /**
      * The encoding to use
@@ -39,11 +26,11 @@ trait GenericViewConfiguration implements ViewConfiguration{
     /**
      * Whether to enable reloading
      */
-    boolean enableReloading = ViewsEnvironment.isDevelopmentMode()
+    boolean enableReloading = true
     /**
      * The package name to use
      */
-    String packageName = Metadata.getCurrent().getApplicationName() ?: ""
+    String packageName = "me.json.generated"
     /**
      * Whether to compile templates statically
      */
@@ -59,19 +46,11 @@ trait GenericViewConfiguration implements ViewConfiguration{
     /**
      * Whether the cache templates
      */
-    boolean cache = !Environment.isDevelopmentMode()
+    boolean cache = true
     /**
      * Whether resource expansion is allowed
      */
     boolean allowResourceExpansion = true
-    /**
-     * The path to the templates
-     */
-    String templatePath = {
-        def current = Environment.current
-        def pathToTemplates = current.hasReloadLocation() ? current.reloadLocation : BuildSettings.BASE_DIR?.path
-        pathToTemplates ? new File(pathToTemplates, GrailsResourceUtils.VIEWS_DIR_PATH).path : "./grails-app/views"
-    }()
     /**
      * The default package imports
      */
@@ -79,56 +58,6 @@ trait GenericViewConfiguration implements ViewConfiguration{
     /**
      * The default static imports
      */
-    String[] staticImports = ["org.springframework.http.HttpStatus", "org.springframework.http.HttpMethod", "grails.web.http.HttpHeaders"] as String[]
+    String[] staticImports = [] as String[]
 
-    @Override
-    void setGrailsApplication(GrailsApplication grailsApplication) {
-        if(grailsApplication != null) {
-            def domainArtefacts = grailsApplication.getArtefacts(DomainClassArtefactHandler.TYPE)
-            setPackageImports(
-                    findUniquePackages(domainArtefacts)
-            )
-        }
-    }
-
-    void readConfiguration(File configFile) {
-        if(configFile?.exists()) {
-            def config = new CodeGenConfig()
-            config.loadYml(configFile)
-            readConfiguration(config)
-        }
-    }
-
-    void readConfiguration(ConfigMap config) {
-        String moduleName = viewModuleName
-        GroovyObject configObject = (GroovyObject)this
-        if (config != null) {
-            PropertyDescriptor[] descriptors =  BeanUtils.getPropertyDescriptors(GenericViewConfiguration)
-            for (PropertyDescriptor desc in descriptors) {
-                if (desc.writeMethod != null) {
-                    String propertyName = desc.name
-                    Object value
-                    if (desc.propertyType == Class) {
-                        String className = config.getProperty("grails.views.${moduleName}.$propertyName".toString(), String)
-                        if (className) {
-                            value = getClass().classLoader.loadClass(className)
-                        }
-                    } else {
-                        value = config.getProperty("grails.views.${moduleName}.$propertyName", (Class) desc.propertyType)
-                    }
-                    if(value != null) {
-                        configObject.setProperty(propertyName, value)
-                    }
-                }
-            }
-        }
-    }
-
-    String[] findUniquePackages(GrailsClass[] grailsClasses) {
-        Set packages = []
-        for (GrailsClass cls : grailsClasses) {
-            packages << cls.packageName
-        }
-        packages as String[]
-    }
 }
