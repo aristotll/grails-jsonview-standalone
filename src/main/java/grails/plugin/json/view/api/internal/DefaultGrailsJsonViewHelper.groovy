@@ -413,8 +413,6 @@ class DefaultGrailsJsonViewHelper extends DefaultJsonViewHelper implements Grail
             def collection = arguments.containsKey('collection') ? (arguments.collection ?: []) : null
             def var = arguments.var ?: 'it'
             String templateName = template.toString()
-
-            String templateUri
             Template childTemplate
 
             if (childTemplate == null) {
@@ -479,14 +477,5 @@ class DefaultGrailsJsonViewHelper extends DefaultJsonViewHelper implements Grail
             return (T) value
         }
         return null
-    }
-
-    protected List<Object> getJsonStackTrace(Throwable e) {
-        StackTraceUtils.sanitize(e)
-        e.stackTrace
-                .findAll() { StackTraceElement element -> element.lineNumber > -1 }
-                .collect() { StackTraceElement element ->
-                    "$element.lineNumber | ${element.className}.$element.methodName".toString()
-                }.toList() as List<Object>
     }
 }
