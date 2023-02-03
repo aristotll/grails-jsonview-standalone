@@ -11,9 +11,12 @@ import com.github.aristotll.jsonview.JsonViewerTemplateTest
 model {
     JsonViewerTemplateTest.Post post
 }
-json g.render(post, [includes: ['id', 'body']])
-json.author {
-    def (first_name, last_name) = post.author_name.split(" ")
-    json.first_name first_name
-    json.last_name last_name
+json {
+    id post.id
+    body post.body
+    author {
+        def (firstName, lastName) = post.author_name.split(" ", 2)
+        first_name firstName
+        last_name lastName
+    }
 }

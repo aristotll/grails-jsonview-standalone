@@ -48,7 +48,7 @@ class JsonViewerTemplateTest extends Specification implements JsonViewTest {
     //  POSTS   = (1..10).collect { |i| Post.new(i, "Post ##{i}", AUTHORS.next) }
     // reimp ruby code in groovy
     List<Post> POSTS = (1..10).collect { i ->
-        new Post(i, "Post #${i}", AUTHORS.next()) )
+        new Post(i, "Post #${i}", AUTHORS.next())
     }
 
     def "basic template"() {
@@ -67,17 +67,19 @@ class JsonViewerTemplateTest extends Specification implements JsonViewTest {
         render(' json g.render(template: "jsonview/partial", model: [content: "hello"]) ')
                 .json["content"] == "hello"
     }
-    //   test "partial collection by name with symbol local" do
-    //    result = render('json.partial! "post", collection: @posts, as: :post', posts: POSTS)
-    //    assert_equal 10, result.count
-    //    assert_equal "Post #5", result[4]["body"]
-    //    assert_equal "Heinemeier Hansson", result[2]["author"]["last_name"]
-    //    assert_equal "Pavel", result[5]["author"]["first_name"]
-    //  end
+
     def "partial collection by name with symbol local"() {
         when:
-        def obj = render(template: 'jsonview/post_collection', posts: POSTS).json
+        //    result = render('json.partial! "post", collection: @posts, as: :post', posts: POSTS)
+        def obj = render(template: 'jsonview/post_collection', model: [posts: POSTS]).json
         then:
-        obj.count == 10
+        //    assert_equal 10, result.count
+        obj.size() == 10
+        //    assert_equal "Post #5", result[4]["body"]
+        obj[4]["body"] == "Post #5"
+        //    assert_equal "Heinemeier Hansson", result[2]["author"]["last_name"]
+        obj[2]["author"]["last_name"] == "Heinemeier Hansson"
+        //    assert_equal "Pavel", result[5]["author"]["first_name"]
+        obj[5]["author"]["first_name"] == "Pavel"
     }
 }

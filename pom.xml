@@ -6,7 +6,7 @@
 
     <groupId>io.github.aristotll</groupId>
     <artifactId>grails-jsonview-standalone</artifactId>
-    <version>0.0.2</version>
+    <version>0.0.3</version>
     <parent>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
