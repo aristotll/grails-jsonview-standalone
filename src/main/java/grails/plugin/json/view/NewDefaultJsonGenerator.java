@@ -1,5 +1,6 @@
 package grails.plugin.json.view;
 
+import grails.plugin.json.view.api.internal.jbuilder.Jbuilder;
 import groovy.json.DefaultJsonGenerator;
 import groovy.json.JsonGenerator;
 
@@ -9,6 +10,18 @@ import groovy.json.JsonGenerator;
  */
 public class NewDefaultJsonGenerator extends DefaultJsonGenerator {
     public NewDefaultJsonGenerator() {
-        super(new JsonGenerator.Options());
+        super(new JsonGenerator.Options().addConverter(
+                new Converter() {
+                    @Override
+                    public boolean handles(Class<?> type) {
+                        return Jbuilder.class.isAssignableFrom(type);
+                    }
+
+                    @Override
+                    public Object convert(Object value, String key) {
+                        return ((Jbuilder) value).attributes_();
+                    }
+                }
+        ));
     }
 }

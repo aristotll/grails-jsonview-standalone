@@ -11,7 +11,7 @@ import groovy.transform.CompileStatic
  */
 @CompileStatic
 @Canonical
-class JsonRenderResult {
+class JsonRenderResult implements GroovyObject {
     /**
      * The JSON result
      */
@@ -19,5 +19,14 @@ class JsonRenderResult {
     /**
      * The raw JSON text
      */
+    @Override
+    Object getProperty(String propertyName) {
+        try {
+            json[propertyName]
+        } catch (e) {
+//            return super.getProperty(propertyName)
+            return getMetaClass().getProperty(this, propertyName);
+        }
+    }
     String jsonText
 }

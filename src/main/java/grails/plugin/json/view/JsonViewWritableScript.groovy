@@ -1,6 +1,7 @@
 package grails.plugin.json.view
 
 import grails.plugin.json.view.api.JsonView
+import grails.plugin.json.view.api.internal.jbuilder.Jbuilder
 import grails.views.AbstractWritableScript
 import groovy.json.JsonOutput
 import groovy.json.StreamingJsonBuilder
@@ -26,8 +27,6 @@ abstract class JsonViewWritableScript extends AbstractWritableScript implements 
 
 
     /**
-     * TODO: When Groovy 2.4.5 go back to JsonBuilder from groovy-json
-     *
      * @param callable
      * @return
      */
@@ -80,9 +79,12 @@ abstract class JsonViewWritableScript extends AbstractWritableScript implements 
         return json
     }
 
+    StreamingJsonBuilder json(Jbuilder jbuilder) {
+        out.write(generator.toJson(jbuild.attributes_()))
+        return json
+    }
+
     /**
-     * TODO: When Groovy 2.4.5 go back to JsonBuilder from groovy-json
-     *
      * @param callable
      * @return
      */
