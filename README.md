@@ -31,9 +31,6 @@ Not (yet) supported features
 ----
 
 
-To support features
-
-jbuilder instance variable to support the ruby on rails jbuilder syntax .
 
 Won't support features
 
