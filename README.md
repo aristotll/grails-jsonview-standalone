@@ -12,7 +12,7 @@ It has been published to maven central.
         <dependency>
             <groupId>io.github.aristotll</groupId>
             <artifactId>grails-jsonview-standalone</artifactId>
-            <version>0.0.3</version>
+            <version>0.0.4</version>
         </dependency>
 
 ```
@@ -44,4 +44,11 @@ Won't support features
 - gorm model support
 - Model Naming
 - JSON View API
+
+
+---- 
+
+Additional supported features
+
+Rails Jbuilder style syntax support
 
