@@ -13,7 +13,7 @@ import static com.github.aristotll.jsonview.utils.MapUtils.deepMerge
  */
 @CompileStatic
 class Jbuilder {
-    // the rails impl is keep an attributes map that will be used to generate json
+    // the rails impl is keep an attributes hash/array that will be used to generate json
     private Object attributes = [:]
 
     Object attributes_() {

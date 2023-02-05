@@ -5,6 +5,7 @@ import groovy.transform.Canonical
 import groovy.transform.stc.ClosureParams
 import groovy.transform.stc.SimpleType
 import spock.lang.Specification
+
 /**
  * @author cheng.yao
  * @date 2023/2/4
@@ -363,21 +364,6 @@ json {
         then:
         result["comments"].first()["authors"].first()["name"] == "david"
     }
-    //   test 'directly set an array nested in another array' do
-    //    data = [ { :department => 'QA', :not_in_json => 'hello', :names => ['John', 'David'] } ]
-    //
-    //    result = jbuild do |json|
-    //      json.array! data do |object|
-    //        json.department object[:department]
-    //        json.names do
-    //          json.array! object[:names]
-    //        end
-    //      end
-    //    end
-    //
-    //    assert_equal 'David', result[0]['names'].last
-    //    assert !result[0].key?('not_in_json')
-    //  end
 
     def "directly set an array nested in another array"() {
         when:
@@ -557,5 +543,46 @@ json {
         }
         then:
         thrown Errors.ArrayError
+    }
+
+    def "throws NullError when trying to add properties to null"() {
+        when:
+        jbuild { json ->
+            json.null_()
+            json.foo 'bar'
+        }
+        then:
+        thrown Errors.NullError
+    }
+
+    def "throws MergeError when trying to merge array with hash"() {
+        when:
+        jbuild { json ->
+            json.name 'Daniel'
+            json.merge_([])
+        }
+        then:
+        thrown Errors.MergeError
+    }
+
+
+    def "throws MergeError when trying to merge hash with array"() {
+        when:
+        jbuild { json ->
+            json.array_()
+            json.merge_([:])
+        }
+        then:
+        thrown Errors.MergeError
+    }
+
+    def "throws MergeError when trying to merge invalid objects"() {
+        when:
+        jbuild { json ->
+            json.name 'Daniel'
+            json.merge_('Nope')
+        }
+        then:
+        thrown Errors.MergeError
     }
 }
