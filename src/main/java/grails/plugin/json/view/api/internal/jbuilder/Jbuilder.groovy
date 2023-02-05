@@ -3,6 +3,9 @@ package grails.plugin.json.view.api.internal.jbuilder
 
 import groovy.transform.CompileStatic
 import org.codehaus.groovy.runtime.ArrayUtil
+
+import static com.github.aristotll.jsonview.utils.MapUtils.deepMerge
+
 /**
  * reimplementation of rails jbuilder syntax
  * @author cheng.yao
@@ -11,30 +14,26 @@ import org.codehaus.groovy.runtime.ArrayUtil
 @CompileStatic
 class Jbuilder {
     // the rails impl is keep an attributes map that will be used to generate json
-
-//    private final JsonView view
-    private Object attributes
+    private Object attributes = [:]
 
     Object attributes_() {
         return attributes
     }
-
-//    Jbuilder(JsonView view) {
-//        this.view = view
-//    }
 
     def methodMissing(String name, def args) {
         Object[] typedArgs = (Object[]) args
         if (typedArgs) {
             def last = typedArgs[-1]
             def lastClosure = last instanceof Closure
-            if (typedArgs.length == 1) {
+
+            def length = typedArgs.length
+            if (length == 1) {
                 if (lastClosure) {
                     set_(name, BLANK, last as Closure)
                 } else {
                     set_(name, typedArgs[0])
                 }
-            } else if (typedArgs.length == 2) {
+            } else if (length == 2) {
                 if (lastClosure) {
                     set_(name, typedArgs[0], last as Closure)
                 } else {
@@ -42,9 +41,9 @@ class Jbuilder {
                 }
             } else {
                 if (lastClosure) {
-                    set_(name, typedArgs[0], last as Closure, typedArgs[1..-2])
+                    set_(name, typedArgs[0], last as Closure, typedArgs[1..length - 2].toArray())
                 } else {
-                    set_(name, typedArgs[0], null, typedArgs[1..-1])
+                    set_(name, typedArgs[0], null, typedArgs[1..length - 1].toArray())
                 }
             }
         } else {
@@ -57,7 +56,6 @@ class Jbuilder {
     //   def set!(key, value = BLANK, *args, &block)
     def set_(String key, Object value = BLANK, Closure block = null, Object[] args = ArrayUtil.createArray()) {
         def result
-        //    result = if ::Kernel.block_given?
         if (block) {
             if (_blank(value)) {
                 //        # json.comments { ... }
@@ -70,8 +68,17 @@ class Jbuilder {
                 result = _scope { array_ value, block }
             }
         } else {
-            //    elsif args.empty?
-            if (!args) {
+            if (args) {
+                if (value instanceof Iterable) {
+                    //      # json.comments @post.comments, :content, :created_at
+                    //      # { "comments": [ { "content": "hello", "created_at": "..." }, { "content": "world", "created_at": "..." } ] }
+                    result = _scope { array_(value, null, args) }
+                } else {
+                    //      # json.author @post.creator, :name, :email_address
+                    //      # { "author": { "name": "David", "email_address": "david@loudthinking.com" } }
+                    result = _merge_block(key) { extract_(value, args) }
+                }
+            } else {
                 if (value instanceof Jbuilder) {
                     //        # json.age 32
                     //        # json.person another_jbuilder
@@ -81,16 +88,6 @@ class Jbuilder {
                     //        # json.age 32
                     //        # { "age": 32 }
                     result = value
-                }
-            } else {
-                if (value instanceof Iterable) {
-                    //      # json.comments @post.comments, :content, :created_at
-                    //      # { "comments": [ { "content": "hello", "created_at": "..." }, { "content": "world", "created_at": "..." } ] }
-                    result = _scope { array_(value, null, args) }
-                } else {
-                    //      # json.author @post.creator, :name, :email_address
-                    //      # { "author": { "name": "David", "email_address": "david@loudthinking.com" } }
-                    result = _merge_block(key) { extract_(value, args) }
                 }
             }
         }
@@ -107,7 +104,7 @@ class Jbuilder {
         if (value == null || value == BLANK) {
             return
         }
-        if (attributes == null) {
+        if (_blank()) {
             attributes = [:]
         }
         attributes[key.toString()] = value
@@ -159,19 +156,6 @@ class Jbuilder {
     //  #
     //  #   [1,2,3]
     def array_(collection = [], Closure block = null, Object[] args = ArrayUtil.createArray()) {
-        //  def array!(collection = [], *attributes, &block)
-        //    array = if collection.nil?
-        //      []
-        //    elsif ::Kernel.block_given?
-        //      _map_collection(collection, &block)
-        //    elsif attributes.any?
-        //      _map_collection(collection) { |element| extract! element, *attributes }
-        //    else
-        //      _format_keys(collection.to_a)
-        //    end
-        //
-        //    @attributes = _merge_values(@attributes, array)
-        //  end
         def array
         if (collection == null) {
             array = []
@@ -198,7 +182,8 @@ class Jbuilder {
             return current_value + updates
         }
         if (current_value instanceof Map && updates instanceof Map) {
-            return current_value + updates
+            // deep merge two map
+            return deepMerge(current_value, updates)
         }
         throw Errors.MergeError.build(current_value, updates)
     }
@@ -226,7 +211,10 @@ class Jbuilder {
     //  # You can also use the call syntax instead of an explicit extract! call:
     //  #
     //  #   json.(@person, :name, :age)
-    def extract_(object, Object[] attributes) {
+    def extract_(object, Object... attributes) {
+        if (!object) {
+            return
+        }
         //   def _extract_hash_values(object, attributes)
         //    attributes.each{ |key| _set_value key, _format_keys(object.fetch(key)) }
         //  end
@@ -236,16 +224,60 @@ class Jbuilder {
         //  end
         attributes.each { key ->
             // object get property key
-            _set_value(key, object[key.toString()])
+            def strKey = key.toString()
+            _set_value(strKey, object[strKey])
         }
     }
 
     private def _merge_block(key, Closure closure) {
-        def current_value = _blank() ? BLANK : attributes[key.toString()]
+        def current_value = _blank() ? BLANK : (attributes[key.toString()] ?: BLANK)
         if (current_value == null) {
             throw Errors.NullError.build(key)
         }
         def new_value = _scope { closure.call(this) }
         _merge_values(current_value, new_value)
+    }
+
+    def call(object, Object... args) {
+        if (args) {
+            def last = args[-1]
+            def lastClosure = last instanceof Closure
+            if (lastClosure) {
+                return array_(object, last as Closure)
+            }
+        }
+        extract_(object, args)
+    }
+    //   # Merges hash, array, or Jbuilder instance into current builder.
+    def merge_(object) {
+        def hash_or_array = object instanceof Jbuilder ? object.attributes : object
+        attributes = _merge_values(attributes, hash_or_array)
+    }
+    //   # Turns the current element into an array and yields a builder to add a hash.
+    //  #
+    //  # Example:
+    //  #
+    //  #   json.comments do
+    //  #     json.child! { json.content "hello" }
+    //  #     json.child! { json.content "world" }
+    //  #   end
+    //  #
+    //  #   { "comments": [ { "content": "hello" }, { "content": "world" } ]}
+    //  #
+    //  # More commonly, you'd use the combined iterator, though:
+    //  #
+    //  #   json.comments(@post.comments) do |comment|
+    //  #     json.content comment.formatted_content
+    //  #   end
+
+    //  def child!
+    //    @attributes = [] unless ::Array === @attributes
+    //    @attributes << _scope{ yield self }
+    //  end
+    def child_(Closure block) {
+        if (!(attributes instanceof Collection)) {
+            attributes = []
+        }
+        (Collection)attributes << _scope { block.call(this) }
     }
 }

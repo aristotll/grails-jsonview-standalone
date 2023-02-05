@@ -39,7 +39,7 @@ trait JsonView implements WritableScript {
      */
     TemplateRenderer tmpl = new TemplateRenderer(viewHelper)
 
-    Jbuilder jbuild = new Jbuilder()
+    Jbuilder jb = new Jbuilder()
     /**
      * @return The default view helper
      */

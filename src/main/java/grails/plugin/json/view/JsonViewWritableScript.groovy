@@ -80,7 +80,7 @@ abstract class JsonViewWritableScript extends AbstractWritableScript implements 
     }
 
     StreamingJsonBuilder json(Jbuilder jbuilder) {
-        out.write(generator.toJson(jbuild.attributes_()))
+        out.write(generator.toJson(jbuilder.attributes_()))
         return json
     }
 

@@ -1,2 +1,2 @@
-jbuild.test "test"
-json jbuild
+jb.test "test"
+json jb
