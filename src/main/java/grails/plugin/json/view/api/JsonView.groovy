@@ -2,10 +2,10 @@ package grails.plugin.json.view.api
 
 import grails.plugin.json.view.NewDefaultJsonGenerator
 import grails.plugin.json.view.api.internal.DefaultGrailsJsonViewHelper
+import grails.plugin.json.view.api.internal.jbuilder.Jbuilder
+import grails.plugin.json.view.api.internal.TemplateRenderer
 import grails.views.WritableScript
-import groovy.json.DefaultJsonGenerator
 import groovy.json.JsonGenerator
-import groovy.json.JsonOutput
 import groovy.json.StreamingJsonBuilder
 import groovy.transform.CompileStatic
 
@@ -35,12 +35,21 @@ trait JsonView implements WritableScript {
     private GrailsJsonViewHelper viewHelper = new DefaultGrailsJsonViewHelper(this)
 
     /**
+     * The template namespace
+     */
+    TemplateRenderer tmpl = new TemplateRenderer(viewHelper)
+
+    Jbuilder jb = new Jbuilder()
+    /**
      * @return The default view helper
      */
     GrailsJsonViewHelper getG() {
         return viewHelper
     }
 
+    // be attention every json call with create the possible json string for input
+    // but jbuilder should not
+    // that is main difference
 
     /**
      * Output JSON for the given map

@@ -60,7 +60,7 @@ trait JsonViewTest {
         String templateText
         if (arguments.template) {
             templateText = getJsonViewTemplateEngine().process(arguments.template as String,
-                    new Context(Locale.ENGLISH, arguments.model as Map<String, Object>))
+                    new Context(Locale.ENGLISH, (arguments.model as Map<String, Object>) ?: Collections.<String, Object> emptyMap()))
         }
         if (templateText == null) {
             throw new IllegalArgumentException("a 'template' argument is required!")

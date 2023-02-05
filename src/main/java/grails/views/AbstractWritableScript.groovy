@@ -48,13 +48,4 @@ abstract class AbstractWritableScript extends Script implements WritableScript {
      * @return The original writer or a wrapped version
      */
     abstract Writer doWrite(Writer writer)
-
-
-    void setModelTypes(Map<String, Class> modelTypes) {
-        this.modelTypes = modelTypes
-    }
-
-    Map<String, Class> getModelTypes() {
-        return modelTypes
-    }
 }
