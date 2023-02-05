@@ -1,13 +1,10 @@
 package grails.plugin.json.view.api.internal.jbuilder
 
-
 import grails.plugin.json.view.test.JsonViewTest
 import groovy.transform.Canonical
 import groovy.transform.stc.ClosureParams
 import groovy.transform.stc.SimpleType
 import spock.lang.Specification
-
-
 /**
  * @author cheng.yao
  * @date 2023/2/4
@@ -35,6 +32,13 @@ class JbuilderTest extends Specification implements JsonViewTest {
             this.collection = collection
         }
 
+    }
+
+    static class RelationMock implements Iterable {
+        @Override
+        Iterator iterator() {
+            return [new Person('Bob', 30), new Person('Frank', 50)].iterator()
+        }
     }
 
 
@@ -287,10 +291,12 @@ json {
     def "handles nil-collections as empty arrays"() {
         when:
         def result = jbuild { json ->
-            json.comments null, 'content'
+            json.comments(null) {
+                json.content it.content
+            }
         }
         then:
-        !result["comments"]
+        result["comments"] == []
     }
 
     def "nesting multiple children from array with inline loop and extract"() {
@@ -458,5 +464,98 @@ json {
         result.first()["id"] == 1
         result.last()["content"] == "world"
         result.last()["id"] == 2
+    }
+
+    def "empty top-level array"() {
+        when:
+        def comments = []
+        def result = jbuild { json ->
+            json.array_ comments, { comment ->
+                json.content comment.content
+            }
+        }
+        then:
+        result == []
+    }
+
+    def "dynamically set a key/value"() {
+        when:
+        def result = jbuild { json ->
+            json.set_ 'each', 'stuff'
+        }
+        then:
+        result["each"] == "stuff"
+    }
+
+    def "dynamically set a key/nested child with block"() {
+        when:
+        def result = jbuild { json ->
+            json.set_ 'author', {
+                json.name 'David'
+                json.age 32
+            }
+        }
+        then:
+        result["author"]["name"] == "David"
+        result["author"]["age"] == 32
+    }
+
+    def "dynamically sets a collection"() {
+        when:
+        def comments = [new Expando(content: 'hello', id: 1), new Expando(content: 'world', id: 2)]
+        def result = jbuild { json ->
+            json.set_ 'comments', comments, 'content'
+        }
+        then:
+        result["comments"].first().keySet() == ['content'] as Set
+        result["comments"].first()["content"] == "hello"
+        result["comments"].last()["content"] == "world"
+    }
+
+    def "query like object"() {
+        when:
+        def result = jbuild { json ->
+            json.relations new RelationMock(), 'name', 'age'
+        }
+        then:
+        result["relations"].size() == 2
+        result["relations"].first()["name"] == "Bob"
+        result["relations"].last()["age"] == 50
+    }
+
+    def "null!"() {
+        when:
+        def result = jbuild { json ->
+            json.key 'value'
+            json.null_()
+        }
+        then:
+        result == null
+    }
+
+    def "null! in a block"() {
+        when:
+        def result = jbuild { json ->
+            json.author {
+                json.name 'David'
+            }
+            json.author {
+                json.null_()
+            }
+        }
+        then:
+        result.containsKey("author")
+        // ignore null so the value is still there
+        result["author"]["name"] == 'David'
+    }
+
+    def "throws ArrayError when trying to add a key to an array"() {
+        when:
+        jbuild { json ->
+            json.array_ 'foo', 'bar'
+            json.fizz 'buzz'
+        }
+        then:
+        thrown Errors.ArrayError
     }
 }

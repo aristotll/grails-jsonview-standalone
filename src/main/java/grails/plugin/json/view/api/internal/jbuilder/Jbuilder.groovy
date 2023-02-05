@@ -65,7 +65,7 @@ class Jbuilder {
             } else {
                 //        # json.comments @post.comments { |comment| ... }
                 //        # { "comments": [ { ... }, { ... } ] }
-                result = _scope { array_ value, block }
+                result = _scope { array_((Iterable) value, block) }
             }
         } else {
             if (args) {
@@ -85,20 +85,28 @@ class Jbuilder {
                     //        # { "age": 32, "person": { ...  }
                     result = value.attributes_()
                 } else {
-                    //        # json.age 32
-                    //        # { "age": 32 }
-                    result = value
+                    if (value instanceof Closure) {
+                        result = _merge_block(key) { value.call(this) }
+                    } else {
+                        //        # json.age 32
+                        //        # { "age": 32 }
+                        result = value
+                    }
                 }
             }
         }
         _set_value key, result
     }
 
+    def set_(String key, Object value = BLANK, Object... args) {
+        set_(key, value, null, args)
+    }
+
     private def _set_value(key, value) {
-        if (key == null) {
+        if (attributes == null) {
             throw Errors.NullError.build(key)
         }
-        if (key instanceof Iterable) {
+        if (attributes instanceof Collection) {
             throw Errors.ArrayError.build(key)
         }
         if (value == null || value == BLANK) {
@@ -155,7 +163,7 @@ class Jbuilder {
     //  #   json.array! [1, 2, 3]
     //  #
     //  #   [1,2,3]
-    def array_(collection = [], Closure block = null, Object[] args = ArrayUtil.createArray()) {
+    def array_(Iterable collection = [], Closure block = null, Object[] args = ArrayUtil.createArray()) {
         def array
         if (collection == null) {
             array = []
@@ -171,11 +179,19 @@ class Jbuilder {
         attributes = _merge_values(attributes, array)
     }
 
+    def array_(Iterable collection, Object... args) {
+        array_(collection, null, args)
+    }
+
+    def array_(Object... args) {
+        array_(args.toList(), null, ArrayUtil.createArray())
+    }
+
     private def _merge_values(current_value, updates) {
         if (_blank(updates)) {
             return current_value
         }
-        if (_blank(current_value) || updates == null || !current_value && updates instanceof Iterable) {
+        if (_blank(current_value) || updates == null || !current_value && updates instanceof Collection) {
             return updates
         }
         if (current_value instanceof Iterable && updates instanceof Iterable) {
@@ -213,7 +229,7 @@ class Jbuilder {
     //  #   json.(@person, :name, :age)
     def extract_(object, Object... attributes) {
         if (!object) {
-            return
+            object = Collections.emptyList()
         }
         //   def _extract_hash_values(object, attributes)
         //    attributes.each{ |key| _set_value key, _format_keys(object.fetch(key)) }
@@ -243,7 +259,7 @@ class Jbuilder {
             def last = args[-1]
             def lastClosure = last instanceof Closure
             if (lastClosure) {
-                return array_(object, last as Closure)
+                return array_((Iterable) object, last as Closure)
             }
         }
         extract_(object, args)
@@ -278,6 +294,15 @@ class Jbuilder {
         if (!(attributes instanceof Collection)) {
             attributes = []
         }
-        (Collection)attributes << _scope { block.call(this) }
+        (Collection) attributes << _scope { block.call(this) }
+    }
+
+    def null_() {
+        nil_()
+    }
+
+    //   # Returns the nil JSON.
+    def nil_() {
+        attributes = null
     }
 }
