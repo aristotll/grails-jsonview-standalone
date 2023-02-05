@@ -16,40 +16,6 @@ class Jbuilder {
     // the rails impl is keep an attributes hash/array that will be used to generate json
     private Object attributes = [:]
 
-    Object attributes_() {
-        return attributes
-    }
-
-    def methodMissing(String name, def args) {
-        Object[] typedArgs = (Object[]) args
-        if (typedArgs) {
-            def last = typedArgs[-1]
-            def lastClosure = last instanceof Closure
-
-            def length = typedArgs.length
-            if (length == 1) {
-                if (lastClosure) {
-                    set_(name, BLANK, last as Closure)
-                } else {
-                    set_(name, typedArgs[0])
-                }
-            } else if (length == 2) {
-                if (lastClosure) {
-                    set_(name, typedArgs[0], last as Closure)
-                } else {
-                    set_(name, typedArgs[0], null, typedArgs[1])
-                }
-            } else {
-                if (lastClosure) {
-                    set_(name, typedArgs[0], last as Closure, typedArgs[1..length - 2].toArray())
-                } else {
-                    set_(name, typedArgs[0], null, typedArgs[1..length - 1].toArray())
-                }
-            }
-        } else {
-            set_(name)
-        }
-    }
 
     public static final Object BLANK = new Object()
 
@@ -102,36 +68,65 @@ class Jbuilder {
         set_(key, value, null, args)
     }
 
-    private def _set_value(key, value) {
-        if (attributes == null) {
-            throw Errors.NullError.build(key)
+    def methodMissing(String name, def args) {
+        Object[] typedArgs = (Object[]) args
+        if (typedArgs) {
+            def last = typedArgs[-1]
+            def lastClosure = last instanceof Closure
+
+            def length = typedArgs.length
+            if (length == 1) {
+                if (lastClosure) {
+                    set_(name, BLANK, last as Closure)
+                } else {
+                    set_(name, typedArgs[0])
+                }
+            } else if (length == 2) {
+                if (lastClosure) {
+                    set_(name, typedArgs[0], last as Closure)
+                } else {
+                    set_(name, typedArgs[0], null, typedArgs[1])
+                }
+            } else {
+                if (lastClosure) {
+                    set_(name, typedArgs[0], last as Closure, typedArgs[1..length - 2].toArray())
+                } else {
+                    set_(name, typedArgs[0], null, typedArgs[1..length - 1].toArray())
+                }
+            }
+        } else {
+            set_(name)
         }
-        if (attributes instanceof Collection) {
-            throw Errors.ArrayError.build(key)
-        }
-        if (value == null || value == BLANK) {
-            return
-        }
-        if (_blank()) {
-            attributes = [:]
-        }
-        attributes[key.toString()] = value
     }
 
-    private boolean _blank(Object value = attributes) {
-        BLANK == value
+//   # Turns the current element into an array and yields a builder to add a hash.
+    //  #
+    //  # Example:
+    //  #
+    //  #   json.comments do
+    //  #     json.child! { json.content "hello" }
+    //  #     json.child! { json.content "world" }
+    //  #   end
+    //  #
+    //  #   { "comments": [ { "content": "hello" }, { "content": "world" } ]}
+    //  #
+    //  # More commonly, you'd use the combined iterator, though:
+    //  #
+    //  #   json.comments(@post.comments) do |comment|
+    //  #     json.content comment.formatted_content
+    //  #   end
+
+    //  def child!
+    //    @attributes = [] unless ::Array === @attributes
+    //    @attributes << _scope{ yield self }
+    //  end
+    def child_(Closure block) {
+        if (!(attributes instanceof Collection)) {
+            attributes = []
+        }
+        (Collection) attributes << _scope { block.call(this) }
     }
 
-    private Object _scope(Closure closure) {
-        def parentAttributes = attributes
-        attributes = BLANK
-        try {
-            closure.call()
-            return attributes
-        } finally {
-            attributes = parentAttributes
-        }
-    }
 
     //   # Turns the current element into an array and iterates over the passed collection, adding each iteration as
     //  # an element of the resulting array.
@@ -187,29 +182,6 @@ class Jbuilder {
         array_(args.toList(), null, ArrayUtil.createArray())
     }
 
-    private def _merge_values(current_value, updates) {
-        if (_blank(updates)) {
-            return current_value
-        }
-        if (_blank(current_value) || updates == null || !current_value && updates instanceof Collection) {
-            return updates
-        }
-        if (current_value instanceof Iterable && updates instanceof Iterable) {
-            return current_value + updates
-        }
-        if (current_value instanceof Map && updates instanceof Map) {
-            // deep merge two map
-            return deepMerge(current_value, updates)
-        }
-        throw Errors.MergeError.build(current_value, updates)
-    }
-
-    private def _map_collection(collection, Closure closure) {
-        collection.collect { element ->
-            _scope { closure.call(element) }
-        }.findAll { it != BLANK }
-    }
-
     //   # Extracts the mentioned attributes or hash elements from the passed object and turns them into attributes of the JSON.
     //  #
     //  # Example:
@@ -245,15 +217,6 @@ class Jbuilder {
         }
     }
 
-    private def _merge_block(key, Closure closure) {
-        def current_value = _blank() ? BLANK : (attributes[key.toString()] ?: BLANK)
-        if (current_value == null) {
-            throw Errors.NullError.build(key)
-        }
-        def new_value = _scope { closure.call(this) }
-        _merge_values(current_value, new_value)
-    }
-
     def call(object, Object... args) {
         if (args) {
             def last = args[-1]
@@ -264,45 +227,89 @@ class Jbuilder {
         }
         extract_(object, args)
     }
-    //   # Merges hash, array, or Jbuilder instance into current builder.
-    def merge_(object) {
-        def hash_or_array = object instanceof Jbuilder ? object.attributes : object
-        attributes = _merge_values(attributes, hash_or_array)
-    }
-    //   # Turns the current element into an array and yields a builder to add a hash.
-    //  #
-    //  # Example:
-    //  #
-    //  #   json.comments do
-    //  #     json.child! { json.content "hello" }
-    //  #     json.child! { json.content "world" }
-    //  #   end
-    //  #
-    //  #   { "comments": [ { "content": "hello" }, { "content": "world" } ]}
-    //  #
-    //  # More commonly, you'd use the combined iterator, though:
-    //  #
-    //  #   json.comments(@post.comments) do |comment|
-    //  #     json.content comment.formatted_content
-    //  #   end
 
-    //  def child!
-    //    @attributes = [] unless ::Array === @attributes
-    //    @attributes << _scope{ yield self }
-    //  end
-    def child_(Closure block) {
-        if (!(attributes instanceof Collection)) {
-            attributes = []
-        }
-        (Collection) attributes << _scope { block.call(this) }
+    //   # Returns the nil JSON.
+    def nil_() {
+        attributes = null
     }
 
     def null_() {
         nil_()
     }
 
-    //   # Returns the nil JSON.
-    def nil_() {
-        attributes = null
+    Object attributes_() {
+        return attributes
     }
+
+    //   # Merges hash, array, or Jbuilder instance into current builder.
+    def merge_(object) {
+        def hash_or_array = object instanceof Jbuilder ? object.attributes : object
+        attributes = _merge_values(attributes, hash_or_array)
+    }
+
+
+    private def _merge_block(key, Closure closure) {
+        def current_value = _blank() ? BLANK : (attributes[key.toString()] ?: BLANK)
+        if (current_value == null) {
+            throw Errors.NullError.build(key)
+        }
+        def new_value = _scope { closure.call(this) }
+        _merge_values(current_value, new_value)
+    }
+
+
+    private def _merge_values(current_value, updates) {
+        if (_blank(updates)) {
+            return current_value
+        }
+        if (_blank(current_value) || updates == null || !current_value && updates instanceof Collection) {
+            return updates
+        }
+        if (current_value instanceof Iterable && updates instanceof Iterable) {
+            return current_value + updates
+        }
+        if (current_value instanceof Map && updates instanceof Map) {
+            // deep merge two map
+            return deepMerge(current_value, updates)
+        }
+        throw Errors.MergeError.build(current_value, updates)
+    }
+
+    private def _set_value(key, value) {
+        if (attributes == null) {
+            throw Errors.NullError.build(key)
+        }
+        if (attributes instanceof Collection) {
+            throw Errors.ArrayError.build(key)
+        }
+        if (value == null || value == BLANK) {
+            return
+        }
+        if (_blank()) {
+            attributes = [:]
+        }
+        attributes[key.toString()] = value
+    }
+
+    private def _map_collection(collection, Closure closure) {
+        collection.collect { element ->
+            _scope { closure.call(element) }
+        }.findAll { it != BLANK }
+    }
+
+    private Object _scope(Closure closure) {
+        def parentAttributes = attributes
+        attributes = BLANK
+        try {
+            closure.call()
+            return attributes
+        } finally {
+            attributes = parentAttributes
+        }
+    }
+
+    private boolean _blank(Object value = attributes) {
+        BLANK == value
+    }
+
 }
