@@ -311,5 +311,4 @@ class Jbuilder {
     private boolean _blank(Object value = attributes) {
         BLANK == value
     }
-
 }

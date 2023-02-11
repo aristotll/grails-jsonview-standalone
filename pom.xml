@@ -179,6 +179,33 @@
                     </execution>
                 </executions>
             </plugin>
+            <plugin>
+                <groupId>org.sonatype.plugins</groupId>
+                <artifactId>nexus-staging-maven-plugin</artifactId>
+                <version>1.6.7</version>
+                <extensions>true</extensions>
+                <configuration>
+                    <serverId>ossrh</serverId>
+                    <nexusUrl>https://s01.oss.sonatype.org/</nexusUrl>
+                    <autoReleaseAfterClose>true</autoReleaseAfterClose>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>attach-javadocs</id>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <doclint>none</doclint>
+                    <failOnError>false</failOnError>
+                </configuration>
+            </plugin>
         </plugins>
     </build>
 
@@ -190,7 +217,7 @@
         <!--         https://github.com/mbari-org/commons/blob/main/pom.xml -->
         <plugin.gpg.version>1.6</plugin.gpg.version>
     </properties>
-<!--     https://blog.10pines.com/2018/06/25/publish-artifacts-on-maven-central/ -->
+    <!--     https://blog.10pines.com/2018/06/25/publish-artifacts-on-maven-central/ -->
     <distributionManagement>
         <snapshotRepository>
             <id>ossrh</id>
